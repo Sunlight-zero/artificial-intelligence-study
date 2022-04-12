@@ -30,7 +30,7 @@ class LinearRegression:
         return data.DataLoader(dataset, batch_size, shuffle=is_train)
     
     def train(self, dataset, mini_batch_size, eta: float, epochs: int):
-        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=0.03)
+        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=eta)
         data_iter = self.load_array(dataset, mini_batch_size)
         for epoch in range(epochs):
             for x, y in data_iter:
