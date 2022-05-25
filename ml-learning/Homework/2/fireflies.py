@@ -86,15 +86,19 @@ class Fireflies:
             # Find the next event:
             next_firefly = np.argmin(self.next_event_spans)
             time_span = self.next_event_spans[next_firefly]
+            # Update all the event spans
             self.next_event_spans -= time_span
             self.change(next_firefly)
+            # Update the maximum.
             self.max = max(np.sum(self.statuses), self.max)
 
 if __name__ == '__main__':
-    max_fireflies_statistics = []
-    for _ in range(100):
-        fireflies = Fireflies(100)
-        fireflies.start_simulation()
-        print('The max fireflies is', fireflies.max)
-        max_fireflies_statistics.append(fireflies.max)
-    print(np.mean(max_fireflies_statistics))
+    np.random.seed(100)
+    num_fireflies = 100
+    print('Current: configuration:')
+    print('Number of fireflies:', num_fireflies)
+    print('Weight:', WEIGHT)
+    print('K', K)
+    fireflies = Fireflies(100)
+    fireflies.start_simulation()
+    print('The max fireflies is', fireflies.max)
