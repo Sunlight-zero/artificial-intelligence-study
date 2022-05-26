@@ -85,6 +85,28 @@ class MazeEnv2D:
         print('')
         sleep(0.2)
     
+    def visualize_route(self, routes: np.ndarray):
+        """
+        Return a group of characters to visualize the training. 
+        """
+        rewards = self.rewards.T
+        routes = routes.T
+
+        def map_symbol(reward: int or float) -> str:
+            if reward > 0: return 'T'
+            elif reward < -0.5: return 'U'
+            else: return '-'
+        
+        print('`U` for obstacle, `-` for blank slot and `*` for routes.')
+        print('The route that the agent has found is:')
+        for i in range(self.height):
+            # Contruct the map of the i-th line.
+            line = list(map(map_symbol, rewards[i]))
+            for j in range(self.width):
+                line[j] = '*' if routes[i][j] == 1 else line[j]
+            print(''.join(line))
+        sleep(0.2)
+    
     def train(self, num_episodes):
         """
         Start training.
@@ -95,9 +117,9 @@ class MazeEnv2D:
             flag = True
             # The main circulation of reinforcement learning. 
             while flag:
+                counter += 1
                 action = self.choose(state)
                 new_state, reward = self.env_interact(state, action)
-                counter += 1
                 q_predict = self.q_table[(*state, action)]
                 # Judge if the agent arrives the terminal.
                 if not (new_state == self.terminal).all():
@@ -105,6 +127,7 @@ class MazeEnv2D:
                 else:
                     q_target = reward
                     flag = False
+                # Update Q table
                 self.q_table[(*state, action)] += self.lr * (q_target - q_predict)
                 state = new_state
                 # self.visualize(state)
@@ -118,13 +141,15 @@ class MazeEnv2D:
         """
         counter = 0
         state = np.array([0, 0])
-        self.visualize(state)
+        routes = np.zeros(self.size)
+        routes[tuple(state)] = 1
         while not (state == self.terminal).all():
             action = self.choose(state, greedy=True)
             state, _ = self.env_interact(state, action)
-            self.visualize(state)
+            routes[tuple(state)] = 1
             counter += 1
-        print('Test steps: {}'.format(counter))
+        self.visualize_route(routes)
+        print('Total steps: {}'.format(counter))
             
 
 if __name__ == '__main__':
