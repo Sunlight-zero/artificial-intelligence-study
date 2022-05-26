@@ -1,3 +1,8 @@
+"""
+Inspired by Mofan Python Learning (莫烦 Python 学习)
+https://mofanpy.com/tutorials/machine-learning/reinforcement-learning/general-rl/
+"""
+
 from copy import deepcopy
 import numpy as np
 from time import sleep
@@ -50,7 +55,7 @@ class MazeEnv:
         """
         v_states = deepcopy(self.visualized_states)
         v_states[state] = 'O'
-        print(''.join(v_states))
+        print('\r' + ''.join(v_states), end="")
         sleep(0.2)
     
     def train(self, epochs):
@@ -73,7 +78,7 @@ class MazeEnv:
                 state = new_state
                 self.visualize(state)
             
-            print('Epoch: {}, Number of steps: {}'.format(epoch, counter))
+            print('\r' + 'Epoch: {}, Number of steps: {}'.format(epoch, counter), end="")
     
     def test(self):
         """
