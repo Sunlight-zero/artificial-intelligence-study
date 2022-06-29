@@ -10,8 +10,8 @@ dataset = pd.read_csv('LDA_data.csv', index_col=0).values
 x_dim = 2
 # Separate two categories. (x_dim is the location of the labels)
 # Method: filter -> change to list and array -> pick out first two columns
-category_1 = np.array(list(filter(lambda r: r[x_dim] == 1, dataset)))[:, :x_dim]
-category_2 = np.array(list(filter(lambda r: r[x_dim] == -1, dataset)))[:, :x_dim]
+category_1 = dataset[dataset[:, -1] == 1][:, :-1]
+category_2 = dataset[dataset[:, -1] == -1][:, :-1]
 
 # Calculate the mean and the covariance matrix
 mu_1, mu_2 = np.mean(category_1, axis=0), np.mean(category_2, axis=0)
