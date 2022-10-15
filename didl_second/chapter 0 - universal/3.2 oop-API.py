@@ -4,6 +4,8 @@ import collections
 from matplotlib_inline import backend_inline
 import matplotlib.pyplot as plt
 from IPython import display
+import d2l.torch as d2l
+from torch import nn
 
 def add_to_class(Class): # 作为一个修饰器使用
     def wrapper(obj):
@@ -74,3 +76,89 @@ class ProgressBoard(HyperParameters):
         axes.legend(plt_lines, labels) # 设置图例
         display.display(self.fig) # 显示图像
         display.clear_output(wait=True) # 让新显示的图覆盖原图
+
+class Module(nn.Module, d2l.HyperParameters):
+    def __init__(self, plot_train_per_epoch=2, plot_valid_per_epoch=1): # 存储参数
+        super().__init__()
+        self.save_hyperparameters()
+        self.board = ProgressBoard()
+    def loss(self, y_hat, y):
+        raise NotImplementedError
+
+    def forward(self, X): # 前向计算函数，会被 nn.Module 自动调用
+        assert hasattr(self, 'net'), 'Neural network is defined'
+        return self.net(X)
+
+    def plot(self, key, value, train): # 绘图
+        """Plot a point in animation."""
+        assert hasattr(self, 'trainer'), 'Trainer is not inited'
+        self.board.xlabel = 'epoch'
+        if train:
+            x = self.trainer.train_batch_idx / \
+                self.trainer.num_train_batches
+            n = self.trainer.num_train_batches / \
+                self.plot_train_per_epoch
+        else:
+            x = self.trainer.epoch + 1
+            n = self.trainer.num_val_batches / \
+                self.plot_valid_per_epoch
+        self.board.draw(x, value.to(d2l.cpu()).detach().numpy(),
+                        ('train_' if train else 'val_') + key,
+                        every_n=int(n))
+
+    def training_step(self, batch): # 训练
+        l = self.loss(self(*batch[:-1]), batch[-1])
+        self.plot('loss', l, train=True)
+        return l
+
+    def validation_step(self, batch):
+        l = self.loss(self(*batch[:-1]), batch[-1])
+        self.plot('loss', l, train=False)
+
+    def configure_optimizers(self):
+        raise NotImplementedError
+
+class DataModule(HyperParameters):  #@save
+    def __init__(self, root='../data', num_workers=1):
+        self.save_hyperparameters()
+
+    def get_dataloader(self, train):
+        raise NotImplementedError
+
+    def train_dataloader(self):
+        return self.get_dataloader(train=True)
+
+    def val_dataloader(self):
+        return self.get_dataloader(train=False)
+
+class Trainer():
+    def __init__(self, max_epochs: int, num_gpus=0, gradient_clip_val=0):
+        self.max_epochs = max_epochs
+        self.num_gpus = num_gpus
+        self.gradient_clip_val = gradient_clip_val
+        assert num_gpus == 0, 'No GPU support yet'
+
+    def prepare_data(self, data: DataModule):
+        self.train_dataloader = data.train_dataloader()
+        self.val_dataloader = data.val_dataloader()
+        self.num_train_batches = len(self.train_dataloader)
+        self.num_val_batches = (len(self.val_dataloader)
+                                if self.val_dataloader is not None else 0)
+
+    def prepare_model(self, model: Module):
+        model.trainer = self
+        model.board.xlim = [0, self.max_epochs]
+        self.model = model
+
+    def fit(self, model: Module, data: DataModule):
+        self.prepare_data(data)
+        self.prepare_model(model)
+        self.optim = model.configure_optimizers()
+        self.epoch = 0
+        self.train_batch_idx = 0
+        self.val_batch_idx = 0
+        for self.epoch in range(self.max_epochs):
+            self.fit_epoch()
+
+    def fit_epoch(self):
+        raise NotImplementedError
