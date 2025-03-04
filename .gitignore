@@ -132,3 +132,6 @@ dmypy.json
 *.jpg
 *.jpeg
 *.png
+
+# logs
+lightning_logs
